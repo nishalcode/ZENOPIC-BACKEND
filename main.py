@@ -1,31 +1,52 @@
-import os, base64, httpx, asyncio, time
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
-from typing import Optional
+import os
+import base64
+import io
+import asyncio
+import time
 from queue import Queue
 from threading import Thread
 
-app = FastAPI(title="Ultimate Multi-Model Free Image Generator")
+import httpx
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-# ===== ENV VARS =====
-HORDE_KEY = os.getenv("HORDE_API_KEY", "0000000000")
-OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY", "free")
-HUGGINGFACE_KEY = os.getenv("HUGGINGFACE_API_KEY", None)
+# ====== FastAPI App ======
+app = FastAPI(title="ZenoPic Backend")
 
-# ===== ENDPOINTS =====
+# ====== CORS ======
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow any frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ====== Root Route ======
+@app.get("/")
+async def root():
+    return {"message": "ZenoPic Backend is live 🚀 Use /generate endpoint"}
+
+# ====== Env Vars ======
+HORDE_KEY = os.getenv("HORDE_API_KEY")
+OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY")
+HUGGINGFACE_KEY = os.getenv("HUGGINGFACE_API_KEY")
+
 HORDE_URL = "https://stablehorde.net/api/v2/generate/text2img"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/images/generations"
 HUGGINGFACE_URL = "https://api-inference.huggingface.co/models/gsdf/Counterfeit-V2.5"
 
-# ===== RATE LIMIT =====
+# ====== Rate Limit ======
 RATE_LIMIT = 5  # requests per user per minute
 user_times = {}
 
-# ===== QUEUE SYSTEM =====
+# ====== Queue System ======
 task_queue = Queue()
 RESULTS = {}
 
+# ====== Pydantic Model ======
 class GenRequest(BaseModel):
     prompt: str
     model: str = "horde"  # "horde", "openrouter", "huggingface"
@@ -35,12 +56,12 @@ class GenRequest(BaseModel):
     cfg_scale: float = 7.5
     sampler: str = "k_euler_ancestral"
     nsfw: bool = False
-    return_png: bool = False  # if True returns PNG bytes
+    return_png: bool = False  # return PNG bytes if True
 
+# ====== Rate limit check ======
 def rate_limited(ip: str):
     now = time.time()
     times = user_times.get(ip, [])
-    # Remove older than 60 sec
     times = [t for t in times if now - t < 60]
     if len(times) >= RATE_LIMIT:
         return True
@@ -48,7 +69,7 @@ def rate_limited(ip: str):
     user_times[ip] = times
     return False
 
-# ===== GENERATION FUNCTIONS =====
+# ====== Image Generation Functions ======
 async def generate_horde(req: GenRequest):
     payload = {
         "prompt": req.prompt,
@@ -64,7 +85,8 @@ async def generate_horde(req: GenRequest):
     headers = {"apikey": HORDE_KEY}
     async with httpx.AsyncClient(timeout=250) as client:
         r = await client.post(HORDE_URL, json=payload, headers=headers)
-    if r.status_code != 200: raise HTTPException(status_code=502, detail=r.text)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=r.text)
     data = r.json()
     return data["generations"][0]["img"]
 
@@ -79,7 +101,8 @@ async def generate_openrouter(req: GenRequest):
     headers = {"Authorization": f"Bearer {OPENROUTER_KEY}"}
     async with httpx.AsyncClient(timeout=180) as client:
         r = await client.post(OPENROUTER_URL, json=payload, headers=headers)
-    if r.status_code != 200: raise HTTPException(status_code=502, detail=r.text)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=r.text)
     data = r.json()
     return data["images"][0]
 
@@ -93,10 +116,12 @@ async def generate_huggingface(req: GenRequest):
     }
     async with httpx.AsyncClient(timeout=180) as client:
         r = await client.post(HUGGINGFACE_URL, json=payload, headers=headers)
-    if r.status_code != 200: raise HTTPException(status_code=502, detail=r.text)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=r.text)
     data = r.json()
     return data[0]["generated_image"]
 
+# ====== Main generate function with fallback ======
 async def generate(req: GenRequest):
     try:
         if req.model.lower() == "horde":
@@ -113,7 +138,7 @@ async def generate(req: GenRequest):
             return await generate_horde(req)
         raise
 
-# ===== QUEUE WORKER =====
+# ====== Queue worker ======
 def worker():
     while True:
         task_id, req = task_queue.get()
@@ -129,7 +154,7 @@ def worker():
 
 Thread(target=worker, daemon=True).start()
 
-# ===== API ENDPOINT =====
+# ====== API Endpoint ======
 @app.post("/generate")
 async def api_generate(req: GenRequest, request: Request):
     ip = request.client.host
@@ -139,7 +164,7 @@ async def api_generate(req: GenRequest, request: Request):
     task_id = str(time.time_ns())
     task_queue.put((task_id, req))
     
-    # Wait for task (or implement async polling if heavy load)
+    # Wait for task completion
     while task_id not in RESULTS:
         await asyncio.sleep(0.5)
     
