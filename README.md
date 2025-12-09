@@ -1,7 +1,7 @@
 # ZENOPIC-BACKEND
 
 ## Description
-ZENOPIC-BACKEND is a lightweight backend for generating images (or your project description).  
+ZENOPIC-BACKEND is a lightweight backend for generating images.  
 It is designed to be fast, secure, and easy to deploy.  
 
 **⚠️ Note:** This project is **proprietary**. No one is allowed to copy, reuse, or redistribute the backend without explicit permission from the owner (Nishal). All rights reserved.
@@ -47,7 +47,7 @@ GET / – Check server status
 POST /generate – Generate an image (provide payload)
 
 
-License
+#License
 
 This project is proprietary.
 All rights reserved. Unauthorized copying, modification, or distribution is strictly prohibited.
