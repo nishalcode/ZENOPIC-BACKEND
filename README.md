@@ -8,7 +8,7 @@ It is designed to be fast, secure, and easy to deploy.
 - Easy to deploy with Python or Docker
 - Structured and scalable for future upgrades
 
-#License / Proprietary Notice
+##License / Proprietary Notice
 
 This project is proprietary.
 All rights are reserved by the owner (Nishal).
