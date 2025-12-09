@@ -1,31 +1,33 @@
-# ZENOPIC-BACKEND
 
 ## Description
-ZENOPIC-BACKEND is a lightweight backend for generating images.  
-It is designed to be fast, secure, and easy to deploy.  
-
-**⚠️ Note:** This project is **proprietary**. No one is allowed to copy, reuse, or redistribute the backend without explicit permission from the owner (Nishal). All rights reserved.
+ZENOPIC-BACKEND is a lightweight backend for image generation and other API tasks.  
+It is designed to be fast, secure, and easy to deploy.
 
 ## Features
 - REST API endpoints for image generation
 - Easy to deploy with Python or Docker
-- Structured and scalable code for future upgrades
+- Structured and scalable for future upgrades
+
+#License / Proprietary Notice
+
+This project is proprietary.
+All rights are reserved by the owner (Nishal).
+No one is allowed to copy, reuse, redistribute, or modify this backend without explicit permission
 
 ## Setup
 
-1. Clone the repo (for authorized users only):
+### 1. Clone the Repo
+For authorized users only:
 ```bash
 git clone https://github.com/nishalcode/ZENOPIC-BACKEND.git
 
-2. Install dependencies:
-
-
+2. Install Dependencies
 
 pip install -r requirements.txt
 
-3. Copy .env.example to .env and add your API keys/secrets:
+3. Environment Variables
 
-
+Copy the example environment file and add your keys:
 
 cp .env.example .env
 
@@ -44,10 +46,4 @@ API Endpoints
 
 GET / – Check server status
 
-POST /generate – Generate an image (provide payload)
-
-
-#License
-
-This project is proprietary.
-All rights reserved. Unauthorized copying, modification, or distribution is strictly prohibited.
+POST /generate – Generate an image (send JSON payload).
